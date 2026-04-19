@@ -59,10 +59,10 @@ clarity handoff        # Generate handoff brief before /clear.
 - v0.0.4 — PreCompact steering hook
 - v0.0.5 — `clarity handoff` skill bundled + wired to `/clear`
 
+## Case study
+
+Clarity's first user is [1Key](https://github.com/robotlearning123/1key), a TypeScript monorepo that was consuming 88% of the author's Claude Code budget before install. See [docs/case-study-1key.md](docs/case-study-1key.md) for the full walkthrough — Doctor output, PR diff, three rounds of codex fixes, and measured outcome.
+
 ## License
 
 MIT. See [LICENSE](LICENSE).
-
----
-
-Built and validated on the [1Key](https://github.com/robotlearning123/1key) project as the first user case — a monorepo that was consuming 88% of the author's Claude Code budget before Clarity's recommendations reshaped its `.claude/` structure.
