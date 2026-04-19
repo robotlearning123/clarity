@@ -20,7 +20,7 @@ Register in any project's .mcp.json:
     }
 
 After registering, the host (Claude Code, Claude Desktop, etc.) can call the
-clarity_doctor tool to get a structured doctor report.
+clarity_doctor tool to get the same Markdown doctor report as the CLI.
 """
 
 from __future__ import annotations
@@ -34,7 +34,7 @@ from pathlib import Path
 PROTO_VERSION = (
     "2025-11-25"  # Current stable per modelcontextprotocol.io/specification/versioning
 )
-SERVER_INFO = {"name": "clarity", "version": "0.0.3"}
+SERVER_INFO = {"name": "clarity", "version": "0.0.5"}
 ROOT = Path(__file__).resolve().parent.parent
 
 TOOLS = [
@@ -43,7 +43,7 @@ TOOLS = [
         "description": (
             "Run Clarity's Doctor: scan ~/.claude/projects/**/*.jsonl, compute per-project and "
             "per-session token totals with correct Opus 4.7 cost weighting (cache_read at 0.1x). "
-            "Returns a structured summary including grand totals, top projects, top expensive "
+            "Returns a Markdown report including grand totals, top projects, top expensive "
             "sessions (with first prompts that triggered scope creep), and concrete recommendations."
         ),
         "inputSchema": {

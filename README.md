@@ -2,9 +2,9 @@
 
 **Copilot-style Claude Code context and token management — official-docs-first, project-grounded.**
 
-> Status: v0.0.4 · private alpha — ships across four surfaces (CLI · MCP server · Claude Code plugin · slash-command skill), all validated against the latest official specs (MCP `2025-11-25`, Claude Code plugin v2.1.111).
+> Status: v0.0.5 · private alpha — ships across four surfaces (CLI · MCP server · Claude Code plugin · slash-command skill), validated against the latest official specs (MCP `2025-11-25`, Claude Code `2.1.114`).
 >
-> **Honest coverage** (per the blog that motivates this project): Clarity v0.0.4 addresses ~30% of the branch-point decisions the blog names. Statusline covers `continue / /clear / /compact` reasoning via ctx% and cache-age. **`/rewind`, subagent suggestions, and task-switch detection are NOT yet implemented** — see [Roadmap](#roadmap) and the [gap table below](#blog-coverage-honest).
+> **Honest coverage** (per the blog that motivates this project): Clarity v0.0.5 addresses ~30% of the branch-point decisions the blog names. Statusline covers `continue / /clear / /compact` reasoning via ctx% and cache-age. **`/rewind`, subagent suggestions, and task-switch detection are NOT yet implemented** — see [Roadmap](#roadmap) and the [gap table below](#blog-coverage-honest).
 
 ## The problem
 
@@ -36,18 +36,22 @@ Clarity ships in four interchangeable forms. Install one or all — they share t
 ### 1. Claude Code plugin (recommended for Claude Code users)
 
 ```bash
-# One-time clone
-git clone git@github.com:robotlearning123/clarity.git ~/tools/clarity
+curl -fsSL https://raw.githubusercontent.com/robotlearning123/clarity/v0.0.5/install.sh | CLARITY_REPO_REF=v0.0.5 bash
+```
 
-# Register as a local marketplace and install
-claude plugin marketplace add ~/tools/clarity
+This installs Clarity into `~/.claude/clarity`, validates the plugin, registers the local marketplace, and installs `clarity@clarity` so Claude Code can use `/clarity-doctor`.
+
+Manual fallback:
+```bash
+git clone https://github.com/robotlearning123/clarity.git ~/.claude/clarity
+claude plugin marketplace add ~/.claude/clarity
 claude plugin install clarity@clarity
 ```
 
 The plugin ships:
 - `/clarity-doctor [days]` slash command
 - Skill frontmatter with `when_to_use` and `effort: low` so Claude invokes it at the right moment
-- Plugin cache path: `~/.claude/plugins/cache/clarity/clarity/0.0.3/`
+- Plugin cache path: `~/.claude/plugins/cache/clarity/clarity/0.0.5/`
 
 Verify:
 ```bash
@@ -84,7 +88,7 @@ Add to your project's `.mcp.json`:
 }
 ```
 
-Protocol: JSON-RPC 2.0 over stdio, MCP spec `2025-11-25`. Exposes one tool (`clarity_doctor`) with a single `since_days` parameter. No external account, no telemetry.
+Protocol: JSON-RPC 2.0 over stdio, MCP spec `2025-11-25`. Exposes one tool (`clarity_doctor`) with a single `since_days` parameter and returns the same Markdown doctor report as the CLI. No external account, no telemetry.
 
 ### 4. Statusline integration
 
@@ -135,9 +139,9 @@ The `cache Xm` field shows minutes until prompt cache expires (60m with `ENABLE_
 
 ## Blog coverage (honest)
 
-Clarity's reason to exist is the Anthropic blog [*Using Claude Code: Session Management & 1M Context*](https://x.com/trq212/status/2044548257058328723). Every feature is measured against it. Current coverage:
+Clarity's reason to exist is the Anthropic blog [*Using Claude Code: Session Management & 1M Context*](https://x.com/trq212/status/2044548257058328723). A local reference copy also lives at [docs/Using Claude Code Session Management & 1M Context.md](docs/Using%20Claude%20Code%20Session%20Management%20%26%201M%20Context.md). Every feature is measured against it. Current coverage:
 
-| Blog concept | Clarity v0.0.4 | Gap |
+| Blog concept | Clarity v0.0.5 | Gap |
 |---|---|---|
 | 1M context awareness | Statusline `ctx N%` + Doctor historical | ✓ |
 | Context rot ~300-400k | Statusline red at 40% used (= 400k on 1M) | ⚠ threshold is %-based, not token-absolute — misleads on non-1M models |
@@ -150,17 +154,18 @@ Clarity's reason to exist is the Anthropic blog [*Using Claude Code: Session Man
 | Bad-compact prevention | Proactive red cue only | ⚠ no PreCompact hook to steer auto-compact |
 | `/handoff` brief generation | — | ✗ v0.0.6 |
 
-v0.0.4 is honest about the ~30% coverage. Doctor + statusline solve the *measurement* and *basic-awareness* half. The *per-turn decision support* half (rewind, subagent, task-switch) is the v0.0.5 and v0.0.6 work.
+v0.0.5 is honest about the ~30% coverage. Doctor + statusline solve the *measurement* and *basic-awareness* half. The *per-turn decision support* half (rewind, subagent, task-switch) is the v0.0.6 and v0.0.7 work.
 
 ## Roadmap
 
 - v0.0.1 — scaffold ✓
 - v0.0.2 — Doctor + statusline + plugin manifest ✓
 - v0.0.3 — CLI + MCP server, latest spec alignment ✓
-- v0.0.4 — **(this release)** codex-audited hardening: symlink-safe CLI, robust jq parsing, cache TTL JSON parse, timezone-aware date filters, honest blog-coverage table
-- v0.0.5 — `/rewind` + subagent guidance in statusline; PreCompact hook that asks "what's next?" before auto-compact fires
-- v0.0.6 — task-switch detection (keyword diff of recent prompts); `/handoff` skill generates brief to `.claude/handoffs/`
-- v0.0.7 — `clarity install` CLI: scaffolds project `.claude/` from Doctor findings (the 1Key PR in one command)
+- v0.0.4 — codex-audited hardening: symlink-safe CLI, robust jq parsing, cache TTL JSON parse, timezone-aware date filters, honest blog-coverage table
+- v0.0.5 — **(this release)** one-line installer (`install.sh`), checked-in smoke tests, fail-closed statusline behavior, unified release metadata across CLI/plugin/MCP, and real Claude Code install/update verification
+- v0.0.6 — `/rewind` + subagent guidance in statusline; PreCompact hook that asks "what's next?" before auto-compact fires
+- v0.0.7 — task-switch detection (keyword diff of recent prompts); `/handoff` skill generates brief to `.claude/handoffs/`
+- v0.0.8 — `clarity install` CLI: scaffolds project `.claude/` from Doctor findings (the 1Key PR in one command)
 
 ## Case study
 

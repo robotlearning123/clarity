@@ -17,16 +17,19 @@ command -v jq >/dev/null 2>&1 || exit 0
 input=$(cat)
 [ -z "$input" ] && exit 0
 
+# Fail closed on malformed JSON. Empty output is safer than a false "OK".
+printf '%s' "$input" | jq -e . >/dev/null 2>&1 || exit 0
+
 # Parse with jq; silence parse errors so malformed input doesn't pollute the statusline.
 cwd=$(printf '%s' "$input" | jq -r '.workspace.current_dir // .cwd // ""' 2>/dev/null)
 session_id=$(printf '%s' "$input" | jq -r '.session_id // empty' 2>/dev/null)
 
-# Context % from Claude Code's statusline JSON (always present on current CC).
-remaining_pct=$(printf '%s' "$input" | jq -r '.context_window.remaining_percentage // empty' 2>/dev/null)
+# Context % from Claude Code's statusline JSON.
+ctx_known=0
+remaining_pct=$(printf '%s' "$input" | jq -r 'if (.context_window.remaining_percentage? | type) == "number" then .context_window.remaining_percentage else empty end' 2>/dev/null)
 if [ -n "$remaining_pct" ]; then
   ctx_used_pct=$(awk "BEGIN{printf \"%d\", 100 - $remaining_pct}")
-else
-  ctx_used_pct=0
+  ctx_known=1
 fi
 
 # Try to locate the current session jsonl for cache-age inference.
@@ -65,15 +68,19 @@ if [ "$cache_known" = "1" ]; then
 fi
 
 # Decide traffic-light state. Suggestions are action-only (the ctx field is printed separately).
-state_color="green"
-suggestion="OK to continue"
-if [ "$ctx_used_pct" -ge 40 ]; then
+state_color="yellow"
+suggestion="status unavailable"
+if [ "$ctx_known" = "1" ]; then
+  state_color="green"
+  suggestion="OK to continue"
+fi
+if [ "$ctx_known" = "1" ] && [ "$ctx_used_pct" -ge 40 ]; then
   state_color="red"
   suggestion="/compact with focus or /clear with handoff"
-elif [ "$cache_known" = "1" ] && [ "$cache_remaining" -le 0 ]; then
+elif [ "$ctx_known" = "1" ] && [ "$cache_known" = "1" ] && [ "$cache_remaining" -le 0 ]; then
   state_color="yellow"
   suggestion="cache expired · /clear is cheap now"
-elif [ "$ctx_used_pct" -ge 25 ]; then
+elif [ "$ctx_known" = "1" ] && [ "$ctx_used_pct" -ge 25 ]; then
   state_color="yellow"
   suggestion="fine for now"
 fi
@@ -91,8 +98,12 @@ else
 fi
 
 # Build output — omit `cache Xm` field if cache_known=0 (keeps the line honest).
-if [ "$cache_known" = "1" ]; then
+if [ "$ctx_known" = "1" ] && [ "$cache_known" = "1" ]; then
   printf "%b cache %dm · ctx %d%% · %s" "$dot" "$cache_remaining" "$ctx_used_pct" "$suggestion"
-else
+elif [ "$ctx_known" = "1" ]; then
   printf "%b ctx %d%% · %s" "$dot" "$ctx_used_pct" "$suggestion"
+elif [ "$cache_known" = "1" ]; then
+  printf "%b cache %dm · %s" "$dot" "$cache_remaining" "$suggestion"
+else
+  printf "%b %s" "$dot" "$suggestion"
 fi

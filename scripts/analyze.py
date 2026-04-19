@@ -254,6 +254,10 @@ def main() -> int:
 
     lines.append("## Recommendations")
     lines.append("")
+    if not top_projects:
+        lines.append(
+            "- **No recent Claude Code sessions found in the selected window.** Try a wider `--since-days` window or rerun Clarity after using Claude Code."
+        )
     if top_projects:
         top_name, top_p = top_projects[0]
         share = (top_p["cost"] / grand_cost * 100) if grand_cost else 0
@@ -265,9 +269,9 @@ def main() -> int:
         lines.append(
             f"- **Your most expensive single session cost ~${sessions[0]['cost_usd']:,.2f}.** Review that first prompt — bounded prompts rarely balloon. See [token-saving rules template](https://github.com/robotlearning123/1key/pull/228)."
         )
-    if (
+    if grand_tokens["cache_creation_input_tokens"] > 0 and (
         grand_tokens["cache_read_input_tokens"]
-        / max(grand_tokens["cache_creation_input_tokens"], 1)
+        / grand_tokens["cache_creation_input_tokens"]
         < 5
     ):
         lines.append(

@@ -144,7 +144,7 @@ Once `.claude/` is installed, future sessions in 1Key load the rules and skills 
 | Merging `012_some_migration.sql` | `migration-reviewer` agent auto-dispatched, applies revenue-leak lens |
 | Adding ElevenLabs as L2 | `l2-add` skill points straight at the slice doc, no self-exploration |
 
-`clarity status` (target v0.0.3) will live in statusline showing current ctx %, cache TTL remaining, and a suggestion when token load crosses 200k.
+`clarity status` now lives in the statusline, showing current ctx %, cache TTL remaining, and a suggestion when token load rises.
 
 ---
 
