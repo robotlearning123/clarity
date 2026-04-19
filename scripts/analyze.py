@@ -155,7 +155,13 @@ def main() -> int:
         return 1
 
     if args.since_date:
-        cutoff = datetime.fromisoformat(args.since_date).replace(tzinfo=timezone.utc)
+        parsed = datetime.fromisoformat(args.since_date)
+        # If input had an explicit offset, convert to UTC. If naive, assume UTC.
+        cutoff = (
+            parsed.astimezone(timezone.utc)
+            if parsed.tzinfo
+            else parsed.replace(tzinfo=timezone.utc)
+        )
     else:
         cutoff = datetime.now(timezone.utc) - timedelta(days=args.since_days)
 

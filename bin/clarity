@@ -5,9 +5,18 @@
 
 set -euo pipefail
 
-VERSION="0.0.3"
+VERSION="0.0.4"
 # Source of truth: .claude-plugin/plugin.json
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+
+# Resolve symlinks so 'clarity' works when installed via `ln -s bin/clarity /usr/local/bin/`.
+# POSIX readlink -f isn't portable on macOS; fall back to a manual resolve loop.
+_src="${BASH_SOURCE[0]}"
+while [ -L "$_src" ]; do
+  _dir="$(cd -- "$(dirname -- "$_src")" >/dev/null 2>&1 && pwd)"
+  _src="$(readlink "$_src")"
+  case "$_src" in /*) ;; *) _src="$_dir/$_src" ;; esac
+done
+ROOT="$(cd -- "$(dirname -- "$_src")/.." >/dev/null 2>&1 && pwd)"
 
 usage() {
   cat <<EOF

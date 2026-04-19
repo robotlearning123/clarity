@@ -5,6 +5,23 @@ All notable changes to Clarity will be documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versioning: [Semantic Versioning](https://semver.org/).
 
+## [0.0.4] — 2026-04-19
+
+### Fixed (from strict codex review + user-level test suite)
+- **[P1 release blocker] `bin/clarity` CLI broke when installed via symlink.** `$(dirname "$0")` resolved to the symlink location (e.g., `/usr/local/bin`) instead of the repo, so `clarity doctor` failed with "can't open /usr/local/scripts/analyze.py". Now uses a portable readlink loop per `BASH_SOURCE[0]` so `ln -s bin/clarity /usr/local/bin/clarity` actually works.
+- **Statusline polluted stderr on malformed JSON input.** jq parse errors leaked through to the statusline; now silenced with `2>/dev/null`, emitting a clean `ctx 0%` fallback.
+- **Cache TTL detection used raw `grep` on settings.json.** Commented-out keys and string `"false"` were matching; now parses with `jq -r .env.ENABLE_PROMPT_CACHING_1H` and checks truthy values (`1`/`true`/`yes`). Same logic applied to `ENABLE_PROMPT_CACHING_1H` env var.
+- **`analyze.py --since-date` discarded timezone offsets.** A naive `replace(tzinfo=UTC)` after `fromisoformat` silently mis-shifted aware inputs (e.g., `2026-01-01T00:00:00+02:00` became 00:00 UTC instead of 22:00 UTC prior day). Now uses `astimezone(UTC)` when input is aware; still defaults to UTC for naive input.
+
+### Added
+- **Honest blog-coverage table in README.** Clarity v0.0.4 addresses ~30% of the branch-point decisions the Anthropic session-management blog names. `/rewind`, subagent hints, and task-switch detection are marked as NOT YET IMPLEMENTED rather than quietly omitted.
+- **User-level E2E test suite** (not shipped as code yet — lives in the strict-test conversation log): 22 scenarios covering statusline edge cases (malformed JSON, missing context_window, cache cold), CLI (symlink, unknown command, invalid since-days), and MCP (unknown tool, unknown method, real tools/call).
+
+### Known limits (moved to Roadmap)
+- `/rewind`, subagent, task-switch, PreCompact steering, `/handoff` are v0.0.5/v0.0.6 work.
+- Rot threshold is a fixed 40% of context_window rather than a token-absolute band (300-400k) — fine on 1M models but misleads on smaller context sizes.
+- MCP `clarity_doctor` returns only a Markdown blob; a structured JSON schema for downstream automation is v0.0.5.
+
 ## [0.0.3] — 2026-04-19
 
 ### Added

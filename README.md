@@ -2,7 +2,9 @@
 
 **Copilot-style Claude Code context and token management — official-docs-first, project-grounded.**
 
-> Status: v0.0.3 · private alpha — ships across four surfaces (CLI · MCP server · Claude Code plugin · slash-command skill), all validated against the latest official specs (MCP `2025-11-25`, Claude Code plugin v2.1.111).
+> Status: v0.0.4 · private alpha — ships across four surfaces (CLI · MCP server · Claude Code plugin · slash-command skill), all validated against the latest official specs (MCP `2025-11-25`, Claude Code plugin v2.1.111).
+>
+> **Honest coverage** (per the blog that motivates this project): Clarity v0.0.4 addresses ~30% of the branch-point decisions the blog names. Statusline covers `continue / /clear / /compact` reasoning via ctx% and cache-age. **`/rewind`, subagent suggestions, and task-switch detection are NOT yet implemented** — see [Roadmap](#roadmap) and the [gap table below](#blog-coverage-honest).
 
 ## The problem
 
@@ -131,13 +133,34 @@ The `cache Xm` field shows minutes until prompt cache expires (60m with `ENABLE_
 | kieranklaassen/token_analysis.py | Python log analyzer | Yes | No | Measure only |
 | **Clarity** | Shell/Python, zero runtime deps | Yes | No | Measure + guide + install |
 
+## Blog coverage (honest)
+
+Clarity's reason to exist is the Anthropic blog [*Using Claude Code: Session Management & 1M Context*](https://x.com/trq212/status/2044548257058328723). Every feature is measured against it. Current coverage:
+
+| Blog concept | Clarity v0.0.4 | Gap |
+|---|---|---|
+| 1M context awareness | Statusline `ctx N%` + Doctor historical | ✓ |
+| Context rot ~300-400k | Statusline red at 40% used (= 400k on 1M) | ⚠ threshold is %-based, not token-absolute — misleads on non-1M models |
+| `continue` decision | Green dot + `OK to continue` | ✓ |
+| `/clear` decision | Yellow/red cues when cache expired or ctx high | ✓ |
+| `/compact` decision | Red cue at ctx ≥ 40% | ⚠ no PreCompact steering hook (`/compact focus on X`) |
+| **`/rewind` decision** | — | ✗ not implemented |
+| **Subagent decision** | — | ✗ no "tool output heavy → spin subagent" hint |
+| **Task-switch detection** | — | ✗ biggest blog ask, requires semantic diff of prompts |
+| Bad-compact prevention | Proactive red cue only | ⚠ no PreCompact hook to steer auto-compact |
+| `/handoff` brief generation | — | ✗ v0.0.6 |
+
+v0.0.4 is honest about the ~30% coverage. Doctor + statusline solve the *measurement* and *basic-awareness* half. The *per-turn decision support* half (rewind, subagent, task-switch) is the v0.0.5 and v0.0.6 work.
+
 ## Roadmap
 
 - v0.0.1 — scaffold ✓
-- v0.0.2 — **(this release)** Doctor (`analyze.py`) with correct cost weighting, statusline script, `/clarity-doctor` slash command, plugin manifest
-- v0.0.3 — SessionStart hook: auto-run Doctor once per project on first session, `.clarity/doctor-report.md` opens automatically
-- v0.0.4 — `clarity install` CLI: scaffolds project `.claude/` structure based on Doctor's findings (the 1Key PR in one command)
-- v0.0.5 — PreCompact steering hook + `/handoff` skill bundled
+- v0.0.2 — Doctor + statusline + plugin manifest ✓
+- v0.0.3 — CLI + MCP server, latest spec alignment ✓
+- v0.0.4 — **(this release)** codex-audited hardening: symlink-safe CLI, robust jq parsing, cache TTL JSON parse, timezone-aware date filters, honest blog-coverage table
+- v0.0.5 — `/rewind` + subagent guidance in statusline; PreCompact hook that asks "what's next?" before auto-compact fires
+- v0.0.6 — task-switch detection (keyword diff of recent prompts); `/handoff` skill generates brief to `.claude/handoffs/`
+- v0.0.7 — `clarity install` CLI: scaffolds project `.claude/` from Doctor findings (the 1Key PR in one command)
 
 ## Case study
 

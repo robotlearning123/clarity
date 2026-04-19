@@ -17,11 +17,12 @@ command -v jq >/dev/null 2>&1 || exit 0
 input=$(cat)
 [ -z "$input" ] && exit 0
 
-cwd=$(printf '%s' "$input" | jq -r '.workspace.current_dir // .cwd // ""')
-session_id=$(printf '%s' "$input" | jq -r '.session_id // empty')
+# Parse with jq; silence parse errors so malformed input doesn't pollute the statusline.
+cwd=$(printf '%s' "$input" | jq -r '.workspace.current_dir // .cwd // ""' 2>/dev/null)
+session_id=$(printf '%s' "$input" | jq -r '.session_id // empty' 2>/dev/null)
 
 # Context % from Claude Code's statusline JSON (always present on current CC).
-remaining_pct=$(printf '%s' "$input" | jq -r '.context_window.remaining_percentage // empty')
+remaining_pct=$(printf '%s' "$input" | jq -r '.context_window.remaining_percentage // empty' 2>/dev/null)
 if [ -n "$remaining_pct" ]; then
   ctx_used_pct=$(awk "BEGIN{printf \"%d\", 100 - $remaining_pct}")
 else
@@ -46,10 +47,15 @@ if [ -n "$cwd" ] && [ -n "$session_id" ]; then
   fi
 fi
 
-# Cache TTL: 1h if env var set OR settings.json opts in; else 5m.
-ttl_minutes=60
-if [ "${ENABLE_PROMPT_CACHING_1H:-}" != "1" ] && ! grep -q 'ENABLE_PROMPT_CACHING_1H' "$HOME/.claude/settings.json" 2>/dev/null; then
-  ttl_minutes=5
+# Cache TTL: 1h if env var is truthy OR settings.json opts in via a real value; else 5m.
+# Parse settings.json with jq (not string grep) so commented lines and "false" don't false-match.
+ttl_minutes=5
+case "${ENABLE_PROMPT_CACHING_1H:-}" in
+  1|true|TRUE|True|yes) ttl_minutes=60 ;;
+esac
+if [ "$ttl_minutes" = "5" ] && [ -f "$HOME/.claude/settings.json" ]; then
+  val=$(jq -r '.env.ENABLE_PROMPT_CACHING_1H // empty' "$HOME/.claude/settings.json" 2>/dev/null)
+  case "$val" in 1|true|TRUE|True|yes) ttl_minutes=60 ;; esac
 fi
 
 cache_remaining=0
