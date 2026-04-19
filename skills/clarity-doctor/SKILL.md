@@ -1,7 +1,9 @@
 ---
 name: clarity-doctor
-description: Run Clarity's Doctor — scan the past 30 days of Claude Code token usage, find problems, recommend fixes. Writes .clarity/doctor-report.md in the current directory. Use on first install or when you feel token spend is off.
-argument-hint: [days]
+description: Run Clarity's Doctor — scan the past 30 days of Claude Code token usage, find problems, recommend fixes. Writes .clarity/doctor-report.md in the current directory.
+when_to_use: First install of Clarity, or any time token spend feels off. Also when switching to a new project and wanting a baseline. Read-only — safe to run anytime.
+argument-hint: "[days]"
+effort: low
 ---
 
 # Clarity Doctor

@@ -2,7 +2,7 @@
 
 **Copilot-style Claude Code context and token management — official-docs-first, project-grounded.**
 
-> Status: v0.0.2 · private alpha — Doctor works, statusline script ships, install-as-plugin
+> Status: v0.0.3 · private alpha — ships across four surfaces (CLI · MCP server · Claude Code plugin · slash-command skill), all validated against the latest official specs (MCP `2025-11-25`, Claude Code plugin v2.1.111).
 
 ## The problem
 
@@ -27,56 +27,89 @@ Clarity does three things, all built from Anthropic's own official guidance:
 - Require an external account
 - Invent rules not in Anthropic's official docs
 
-## Installation (v0.0.2 — as a Claude Code plugin)
+## Installation
 
-Clarity ships as a Claude Code plugin. Two install paths today:
+Clarity ships in four interchangeable forms. Install one or all — they share the same analyzer under the hood.
 
-**A. Clone and symlink (simplest, for private alpha):**
+### 1. Claude Code plugin (recommended for Claude Code users)
 
 ```bash
+# One-time clone
 git clone git@github.com:robotlearning123/clarity.git ~/tools/clarity
 
-# Make it discoverable by Claude Code's plugin loader
-mkdir -p ~/.claude/plugins/cache/clarity/0.0.2
-ln -s ~/tools/clarity ~/.claude/plugins/cache/clarity/0.0.2/local
+# Register as a local marketplace and install
+claude plugin marketplace add ~/tools/clarity
+claude plugin install clarity@clarity
 ```
 
-Then in a new Claude Code session, `/clarity-doctor` is available as a slash command.
+The plugin ships:
+- `/clarity-doctor [days]` slash command
+- Skill frontmatter with `when_to_use` and `effort: low` so Claude invokes it at the right moment
+- Plugin cache path: `~/.claude/plugins/cache/clarity/clarity/0.0.3/`
 
-**B. Add statusline integration (recommended — gives you the real-time signal):**
-
-Append to your `~/.claude/statusline-command.sh` (or wherever your statusline is defined):
-
-```sh
-# ... your existing statusline output ...
-clarity=$(printf '%s' "$input" | sh "$HOME/tools/clarity/scripts/clarity-status.sh" 2>/dev/null)
-[ -n "$clarity" ] && printf ' · %s' "$clarity"
+Verify:
+```bash
+claude plugin list | grep clarity
 ```
 
-Your statusline will now show something like:
-```
-main · opus 4.7 · ctx 12% · ● cache 42m · ctx 12% · OK to continue
-                            └── Clarity's output ─────────────────┘
-```
+### 2. Standalone CLI
 
-When context gets heavy or cache is about to expire, the dot turns yellow/red with a one-line suggestion.
-
-## Usage
+The CLI works with or without the plugin — useful for scripting, CI, or cron jobs.
 
 ```bash
-# Slash command (after plugin install):
-/clarity-doctor                     # run Doctor, write .clarity/doctor-report.md
+# Symlink once for a short PATH entry
+ln -s ~/tools/clarity/bin/clarity /usr/local/bin/clarity
 
-# Direct CLI (always works):
-python3 ~/tools/clarity/scripts/analyze.py --since-days 30
-python3 ~/tools/clarity/scripts/analyze.py --since-days 7 --json
+clarity doctor --since-days 30
+clarity doctor --since-days 7 --json
+clarity version
+clarity help
 ```
+
+### 3. MCP server
+
+Expose `clarity_doctor` as an MCP tool to any compliant client (Claude Code, Claude Desktop, other agents).
+
+Add to your project's `.mcp.json`:
+```json
+{
+  "mcpServers": {
+    "clarity": {
+      "command": "python3",
+      "args": ["/Users/you/tools/clarity/mcp/server.py"]
+    }
+  }
+}
+```
+
+Protocol: JSON-RPC 2.0 over stdio, MCP spec `2025-11-25`. Exposes one tool (`clarity_doctor`) with a single `since_days` parameter. No external account, no telemetry.
+
+### 4. Statusline integration
+
+Append to your `~/.claude/statusline-command.sh`:
+
+```sh
+# your existing statusline output first ...
+
+clarity=$(printf '%s' "$input" | sh "$HOME/tools/clarity/scripts/clarity-status.sh" 2>/dev/null)
+[ -n "$clarity" ] && printf ' · %b' "$clarity"
+```
+
+Output example:
+```
+main · opus 4.7 · ctx 12% · ● cache 42m · ctx 12% · OK to continue
+                            └── Clarity's status ────────────────┘
+```
+
+Degrades gracefully: if the session jsonl isn't yet flushed, the `cache Xm` field is omitted and only `ctx` + traffic light show.
+
+## Daily usage
 
 ### What Doctor reports
 
-- Estimated 30-day cost (using correct Opus 4.7 pricing — cache_read at 0.1x, not 1x)
-- Top cost-concentration project (often one project dominates)
-- Top 10 most expensive sessions, with the first prompt that triggered each (this is where scope-creep started)
+- Estimated 30-day cost using correct Opus 4.7 pricing (cache_read at 0.1x, not 1x — the common DIY-analyzer mistake that makes rankings unreliable)
+- Top cost-concentration project (often one project dominates 80%+)
+- Top 10 most expensive sessions with the first prompt that triggered each — this is where scope creep started
 - Cache read/write ratio — flags if you're paying to rebuild cache too often
 - 2-3 concrete recommendations citing official Anthropic docs only
 
@@ -84,8 +117,8 @@ python3 ~/tools/clarity/scripts/analyze.py --since-days 7 --json
 
 | Dot | Meaning | Suggestion shown |
 |---|---|---|
-| 🟢 green | ctx < 25%, cache warm | `OK to continue` |
-| 🟡 yellow | ctx 25-40%, or cache expired | `ctx X% · fine for now` or `cache expired · /clear is cheap now` |
+| 🟢 green | ctx < 25%, cache warm or unknown | `OK to continue` |
+| 🟡 yellow | ctx 25-40%, or cache expired | `fine for now` or `cache expired · /clear is cheap now` |
 | 🔴 red | ctx ≥ 40% | `/compact with focus or /clear with handoff` |
 
 The `cache Xm` field shows minutes until prompt cache expires (60m with `ENABLE_PROMPT_CACHING_1H=1`, else 5m). Knowing this prevents bad `/compact` decisions mid-session.

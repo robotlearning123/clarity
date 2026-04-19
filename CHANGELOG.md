@@ -5,6 +5,32 @@ All notable changes to Clarity will be documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versioning: [Semantic Versioning](https://semver.org/).
 
+## [0.0.3] — 2026-04-19
+
+### Added
+- **CLI entrypoint** (`bin/clarity`): unified `clarity doctor` / `clarity status` / `clarity version` / `clarity help`. Dispatches to the right script regardless of install method.
+- **MCP server** (`mcp/server.py`): minimal JSON-RPC stdio server, no external SDK. Exposes one tool `clarity_doctor` with `since_days` parameter. Protocol version `2025-11-25` per current MCP spec. Register in any `.mcp.json`.
+- **SKILL.md enhancements**: `when_to_use` and `effort: low` frontmatter fields per latest Claude Code skills reference (v2.1.111+).
+
+### Changed
+- Plugin install now uses the documented `claude plugin marketplace add <path>` + `claude plugin install` flow. Previous README instructions (symlink into `~/.claude/plugins/cache/`) bypassed the marketplace and did not enable the plugin; replaced with the correct official procedure.
+- `plugin.json` bumped to `0.0.3`, added `author` (object, not string) and `repository` fields per Claude Code plugins-reference schema.
+- `marketplace.json`: removed ignored `owner.url` field (not in spec), bumped plugin version to `0.0.3`.
+- Statusline suggestions rewritten to action-only (no duplicate ctx% in the output). Previous output `ctx 30% · ctx 30% · fine for now` became `● ctx 30% · fine for now`.
+- Statusline degrades gracefully when session jsonl is missing (new session, fresh clone): omits the `cache Xm` field instead of producing empty output.
+
+### Verified against latest official specs
+Full audit against docs.claude.com, modelcontextprotocol.io, and Anthropic Claude Code changelog (Jan-Apr 2026). All four surfaces validated:
+- MCP: protocol `2025-11-25`, `capabilities.tools.listChanged=false`
+- Plugin: `claude plugin validate` passes, manifest at `.claude-plugin/plugin.json`
+- Marketplace: `claude plugin marketplace add` accepts and installs
+- Skill: frontmatter matches the 2026 reference (name, description, when_to_use, argument-hint, effort)
+
+### Known limits
+- No `clarity install` CLI yet — project `.claude/` scaffolding is still manual (see docs/case-study-1key.md for the 1Key example, v0.0.4 will automate).
+- Statusline `date` invocation assumes macOS BSD `date -j -f` OR GNU `date -d`; fully portable rewrite deferred.
+- MCP server is stdio-only; HTTP/SSE transports not implemented (v0.0.5).
+
 ## [0.0.2] — 2026-04-19
 
 ### Added

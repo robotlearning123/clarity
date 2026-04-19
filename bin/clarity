@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+# clarity — unified CLI entrypoint.
+# Dispatches to subcommand scripts. Same binary regardless of how Clarity is
+# installed (plugin, manual clone, future brew tap).
+
+set -euo pipefail
+
+VERSION="0.0.3"
+# Source of truth: .claude-plugin/plugin.json
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+
+usage() {
+  cat <<EOF
+clarity ${VERSION} — copilot-style Claude Code context and token management
+
+USAGE
+  clarity <command> [options]
+
+COMMANDS
+  doctor           Scan the past N days of Claude Code usage, find problems,
+                   write a report. Read-only.
+  status           One-line health output for statusline integration.
+                   Expects Claude Code statusline JSON on stdin.
+  version          Print version and exit.
+  help             Show this help.
+
+EXAMPLES
+  clarity doctor --since-days 30
+  clarity doctor --since-days 7 --json
+  clarity status < /path/to/cc-statusline-input.json
+
+MORE
+  CLI:     clarity <cmd>
+  Plugin:  add via 'claude plugin marketplace add <clarity-path>' then '/clarity-doctor'
+  MCP:     see docs/mcp.md for server registration
+  Docs:    https://github.com/robotlearning123/clarity
+EOF
+}
+
+cmd="${1:-help}"
+shift || true
+
+case "$cmd" in
+  doctor)
+    exec python3 "$ROOT/scripts/analyze.py" "$@"
+    ;;
+  status)
+    exec sh "$ROOT/scripts/clarity-status.sh" "$@"
+    ;;
+  version|-v|--version)
+    echo "clarity ${VERSION}"
+    ;;
+  help|-h|--help|"")
+    usage
+    ;;
+  *)
+    echo "error: unknown command '$cmd'" >&2
+    echo "run 'clarity help' for usage" >&2
+    exit 2
+    ;;
+esac

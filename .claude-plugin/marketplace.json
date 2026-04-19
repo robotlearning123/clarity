@@ -1,0 +1,19 @@
+{
+  "name": "clarity",
+  "metadata": {
+    "description": "Copilot-style Claude Code context and token management. Doctor scans past usage, statusline shows cache TTL and traffic-light suggestion, all from official Anthropic docs."
+  },
+  "owner": {
+    "name": "robotlearning123"
+  },
+  "plugins": [
+    {
+      "name": "clarity",
+      "source": "./",
+      "description": "Doctor scans past token usage with correct Opus 4.7 cost weighting (cache_read 0.1x). Statusline script shows traffic-light suggestion based on ctx% and cache TTL. Skill /clarity-doctor runs the analyzer on demand. Also ships an MCP server exposing clarity_doctor as a callable tool.",
+      "version": "0.0.3",
+      "category": "productivity",
+      "keywords": ["token", "context", "statusline", "doctor", "session-management"]
+    }
+  ]
+}
