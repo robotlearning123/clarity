@@ -5,6 +5,23 @@ All notable changes to Clarity will be documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versioning: [Semantic Versioning](https://semver.org/).
 
+## [0.0.2] — 2026-04-19
+
+### Added
+- `scripts/analyze.py` — Doctor: reads `~/.claude/projects/**/*.jsonl`, computes per-project and per-session token totals with correct Opus 4.7 cost weighting (cache_read at 0.1x, not 1x — the common mistake in DIY analyzers that makes cost rankings unreliable). Outputs Markdown report at `.clarity/doctor-report.md`; optional `--json` for machine consumption.
+- `scripts/clarity-status.sh` — one-line statusline integration. Reads Claude Code's statusline JSON on stdin, computes minutes since last activity (cache TTL proxy), context % in use, and traffic-light suggestion. ASCII dot by default, ANSI color when outputting to a real TTY.
+- `skills/clarity-doctor/SKILL.md` — `/clarity-doctor [days]` slash command that runs `analyze.py` and summarizes the top 3-5 signals for the user.
+- `.claude-plugin/plugin.json` — makes the repo discoverable as a Claude Code plugin (v0.0.2).
+
+### Verified
+- `analyze.py` run against real 30-day data: $2,528 estimated cost over 7 days, top project correctly surfaced at 90% concentration.
+- Statusline logic hand-tested across 5 path forms (bare, `./`, absolute, nested, innocent).
+
+### Known limits
+- No `clarity install` CLI yet — project `.claude/` scaffolding is still manual (see docs/case-study-1key.md for the 1Key example).
+- Statusline script assumes macOS `date -j -f` OR GNU `date -d`; other platforms untested.
+- SessionStart hook that auto-runs Doctor on first session not yet included — coming v0.0.3.
+
 ## [0.0.1] — 2026-04-19
 
 ### Added

@@ -1,0 +1,8 @@
+{
+  "name": "clarity",
+  "version": "0.0.2",
+  "description": "Copilot-style Claude Code context and token management. Doctor scans your past token usage, recommends official-docs-based fixes, and keeps watch from the statusline.",
+  "homepage": "https://github.com/robotlearning123/clarity",
+  "license": "MIT",
+  "keywords": ["token", "context", "statusline", "doctor", "session-management"]
+}
