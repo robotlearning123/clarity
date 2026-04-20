@@ -75,11 +75,11 @@ claude plugin list | grep clarity
 
 ### 2. Standalone CLI
 
-The CLI works with or without the plugin — useful for scripting, CI, or cron jobs.
+The CLI works with or without the plugin — useful for scripting, CI, or cron jobs. If you used the recommended install above, the repo checkout already lives at `~/.claude/clarity`.
 
 ```bash
 # Symlink once for a short PATH entry
-ln -s ~/tools/clarity/bin/clarity /usr/local/bin/clarity
+ln -s ~/.claude/clarity/bin/clarity /usr/local/bin/clarity
 
 clarity doctor --since-days 30
 clarity doctor --since-days 7 --json
@@ -97,7 +97,7 @@ Add to your project's `.mcp.json`:
   "mcpServers": {
     "clarity": {
       "command": "python3",
-      "args": ["/Users/you/tools/clarity/mcp/server.py"]
+      "args": ["/Users/you/.claude/clarity/mcp/server.py"]
     }
   }
 }
@@ -112,7 +112,7 @@ Append to your `~/.claude/statusline-command.sh`:
 ```sh
 # your existing statusline output first ...
 
-clarity=$(printf '%s' "$input" | sh "$HOME/tools/clarity/scripts/clarity-status.sh" 2>/dev/null)
+clarity=$(printf '%s' "$input" | sh "$HOME/.claude/clarity/scripts/clarity-status.sh" 2>/dev/null)
 [ -n "$clarity" ] && printf ' · %b' "$clarity"
 ```
 
