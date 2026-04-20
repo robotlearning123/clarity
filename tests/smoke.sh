@@ -5,6 +5,16 @@ set -euo pipefail
 ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." >/dev/null 2>&1 && pwd)"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
+VERSION="$(
+  python3 - <<'PY' "$ROOT"
+import json
+import sys
+from pathlib import Path
+
+root = Path(sys.argv[1])
+print(json.loads((root / ".claude-plugin" / "plugin.json").read_text())["version"])
+PY
+)"
 
 HOME_DIR="$TMP/home"
 export HOME="$HOME_DIR"
@@ -21,13 +31,13 @@ sh -n "$ROOT/scripts/clarity-status.sh"
 sh -n "$ROOT/install.sh"
 
 cli_version="$("$ROOT/bin/clarity" version)"
-[ "$cli_version" = "clarity 0.0.5" ]
+[ "$cli_version" = "clarity $VERSION" ]
 
 mkdir -p "$TMP/bin"
 ln -s "$ROOT/bin/clarity" "$TMP/bin/clarity"
-[ "$("$TMP/bin/clarity" version)" = "clarity 0.0.5" ]
+[ "$("$TMP/bin/clarity" version)" = "clarity $VERSION" ]
 
-python3 - <<'PY' "$ROOT"
+python3 - "$ROOT" "$VERSION" <<'PY'
 import json
 import pathlib
 import re
@@ -38,14 +48,18 @@ cli = (root / "bin" / "clarity").read_text()
 plugin = json.loads((root / ".claude-plugin" / "plugin.json").read_text())["version"]
 market = json.loads((root / ".claude-plugin" / "marketplace.json").read_text())["plugins"][0]["version"]
 mcp = re.search(r'SERVER_INFO = \{"name": "clarity", "version": "([^"]+)"\}', (root / "mcp" / "server.py").read_text()).group(1)
-assert plugin == "0.0.5"
-assert market == "0.0.5"
+assert plugin == sys.argv[2]
+assert market == sys.argv[2]
 assert f'VERSION="{plugin}"' in cli
 assert mcp == plugin
 PY
 
 "$ROOT/bin/clarity" doctor --since-days 30 --out "$TMP/report.md" >/dev/null
 grep -Fq 'Estimated cost: **$119.00**' "$TMP/report.md"
+if rg -n -S 'robotlearning123/1key|case-study-1key|\b1Key\b' "$TMP/report.md" >/dev/null; then
+  echo "doctor report leaked stale 1Key-specific guidance" >&2
+  exit 1
+fi
 
 TZ_HOME="$TMP/tz-home"
 mkdir -p "$TZ_HOME/.claude/projects/-tz-proj"
@@ -92,7 +106,7 @@ cat > "$TMP/in.jsonl" <<'EOF'
 EOF
 
 HOME="$HOME_DIR" python3 "$ROOT/mcp/server.py" < "$TMP/in.jsonl" > "$TMP/out.jsonl"
-grep -q '"version": "0.0.5"' "$TMP/out.jsonl"
+grep -q "\"version\": \"$VERSION\"" "$TMP/out.jsonl"
 grep -q 'Clarity Doctor Report' "$TMP/out.jsonl"
 
 FAKE_HOME="$TMP/fake-home"
@@ -144,3 +158,36 @@ PATH="$FAKE_BIN:$PATH" HOME="$INSTALL_HOME" CLARITY_REPO_URL="file://$ROOT" CLAR
 test -d "$INSTALL_HOME/.claude/clarity/.git"
 grep -Fq "plugin validate $INSTALL_HOME/.claude/clarity" "$FAKE_LOG"
 grep -Fq "plugin install clarity@clarity" "$FAKE_LOG"
+
+DOC_HOME="$TMP/doc-home"
+DOC_LOG="$TMP/doc-claude.log"
+DOC_STATE="$TMP/doc-claude.state"
+DOC_REPO="$TMP/doc-repo"
+mkdir -p "$DOC_REPO"
+rsync -a --exclude '.git' "$ROOT/" "$DOC_REPO/"
+git -C "$DOC_REPO" init -q
+git -C "$DOC_REPO" add .
+git -C "$DOC_REPO" -c user.name='Clarity Smoke' -c user.email='clarity-smoke@example.com' commit -q -m 'snapshot'
+git -C "$DOC_REPO" tag "v$VERSION"
+export FAKE_CLAUDE_LOG="$DOC_LOG"
+export FAKE_CLAUDE_STATE="$DOC_STATE"
+PATH="$FAKE_BIN:$PATH" HOME="$DOC_HOME" CLARITY_REPO_URL="file://$DOC_REPO" CLARITY_REPO_REF="v$VERSION" bash -lc '
+set -euo pipefail
+dir="${CLARITY_INSTALL_DIR:-$HOME/.claude/clarity}"
+repo="${CLARITY_REPO_URL:-https://github.com/robotlearning123/clarity.git}"
+ref="${CLARITY_REPO_REF:-main}"
+
+if [ -d "$dir/.git" ]; then
+  git -C "$dir" fetch --tags origin
+elif [ ! -e "$dir" ]; then
+  git -c advice.detachedHead=false clone --depth 1 --branch "$ref" "$repo" "$dir"
+else
+  echo "$dir exists but is not a git checkout" >&2
+  exit 1
+fi
+
+CLARITY_REPO_REF="$ref" "$dir/install.sh"
+' >/dev/null
+test -d "$DOC_HOME/.claude/clarity/.git"
+grep -Fq "plugin validate $DOC_HOME/.claude/clarity" "$DOC_LOG"
+grep -Fq "plugin install clarity@clarity" "$DOC_LOG"

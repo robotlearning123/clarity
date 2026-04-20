@@ -1,10 +1,10 @@
 # Clarity
 
-**Copilot-style Claude Code context and token management — official-docs-first, project-grounded.**
+**Claude Code context and token management — official-docs-first, self-contained.**
 
-> Status: v0.0.5 · private alpha — ships across four surfaces (CLI · MCP server · Claude Code plugin · slash-command skill), validated against the latest official specs (MCP `2025-11-25`, Claude Code `2.1.114`).
+> Status: v0.0.6 · public alpha — ships across four surfaces (CLI · MCP server · Claude Code plugin · slash-command skill), validated against the latest official specs (MCP `2025-11-25`, Claude Code `2.1.114`).
 >
-> **Honest coverage** (per the blog that motivates this project): Clarity v0.0.5 addresses ~30% of the branch-point decisions the blog names. Statusline covers `continue / /clear / /compact` reasoning via ctx% and cache-age. **`/rewind`, subagent suggestions, and task-switch detection are NOT yet implemented** — see [Roadmap](#roadmap) and the [gap table below](#blog-coverage-honest).
+> **Honest coverage** (per the blog that motivates this project): Clarity v0.0.6 addresses ~30% of the branch-point decisions the blog names. Statusline covers `continue / /clear / /compact` reasoning via ctx% and cache-age. **`/rewind`, subagent suggestions, and task-switch detection are NOT yet implemented** — see [Roadmap](#roadmap) and the [gap table below](#blog-coverage-honest).
 
 ## The problem
 
@@ -16,10 +16,10 @@ And the real driver — poor `.claude/` project structure — forces every sessi
 
 ## The approach
 
-Clarity does three things, all built from Anthropic's own official guidance:
+Clarity does three things today, all built from Anthropic's own official guidance:
 
 1. **Doctor** — read your session logs, your `~/.claude/` and project `.claude/` config, your plugins and rules. Report where the tokens actually go. Recommend fixes only from official docs.
-2. **Install** — scaffold the recommended `.claude/` structure (rules, skills, agents, settings) for your specific project. Not a generic template — it reads your codebase and tailors each file.
+2. **Install** — set up Clarity itself in Claude Code through the plugin, CLI, MCP, and statusline surfaces. Project-specific `.claude/` scaffolding is planned, but it is not shipped in `v0.0.6`.
 3. **Run with you** — sit quietly in the statusline. Warn before cache expires, before bad `/compact`, before a known trap prompt. One suggestion, one keystroke to accept.
 
 ## What Clarity will never do
@@ -36,22 +36,37 @@ Clarity ships in four interchangeable forms. Install one or all — they share t
 ### 1. Claude Code plugin (recommended for Claude Code users)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/robotlearning123/clarity/v0.0.5/install.sh | CLARITY_REPO_REF=v0.0.5 bash
+bash -lc '
+set -euo pipefail
+dir="$HOME/.claude/clarity"
+repo="https://github.com/robotlearning123/clarity.git"
+ref="v0.0.6"
+
+if [ -d "$dir/.git" ]; then
+  git -C "$dir" fetch --tags origin
+elif [ ! -e "$dir" ]; then
+  git -c advice.detachedHead=false clone --depth 1 --branch "$ref" "$repo" "$dir"
+else
+  echo "$dir exists but is not a git checkout" >&2
+  exit 1
+fi
+
+CLARITY_REPO_REF="$ref" "$dir/install.sh"
+'
 ```
 
-This installs Clarity into `~/.claude/clarity`, validates the plugin, registers the local marketplace, and installs `clarity@clarity` so Claude Code can use `/clarity-doctor`.
+This installs Clarity into `~/.claude/clarity`, validates the plugin, registers the local marketplace, and installs `clarity@clarity` so Claude Code can use `/clarity-doctor`. The install flow is git-based instead of depending on a raw-content endpoint, so it works with the same repo access you already use for `git clone`.
 
 Manual fallback:
 ```bash
-git clone https://github.com/robotlearning123/clarity.git ~/.claude/clarity
-claude plugin marketplace add ~/.claude/clarity
-claude plugin install clarity@clarity
+git -c advice.detachedHead=false clone --depth 1 --branch v0.0.6 https://github.com/robotlearning123/clarity.git ~/.claude/clarity
+CLARITY_REPO_REF=v0.0.6 ~/.claude/clarity/install.sh
 ```
 
 The plugin ships:
 - `/clarity-doctor [days]` slash command
 - Skill frontmatter with `when_to_use` and `effort: low` so Claude invokes it at the right moment
-- Plugin cache path: `~/.claude/plugins/cache/clarity/clarity/0.0.5/`
+- Plugin cache path: `~/.claude/plugins/cache/clarity/clarity/0.0.6/`
 
 Verify:
 ```bash
@@ -141,7 +156,7 @@ The `cache Xm` field shows minutes until prompt cache expires (60m with `ENABLE_
 
 Clarity's reason to exist is the Anthropic blog [*Using Claude Code: Session Management & 1M Context*](https://x.com/trq212/status/2044548257058328723). A local reference copy also lives at [docs/Using Claude Code Session Management & 1M Context.md](docs/Using%20Claude%20Code%20Session%20Management%20%26%201M%20Context.md). Every feature is measured against it. Current coverage:
 
-| Blog concept | Clarity v0.0.5 | Gap |
+| Blog concept | Clarity v0.0.6 | Gap |
 |---|---|---|
 | 1M context awareness | Statusline `ctx N%` + Doctor historical | ✓ |
 | Context rot ~300-400k | Statusline red at 40% used (= 400k on 1M) | ⚠ threshold is %-based, not token-absolute — misleads on non-1M models |
@@ -152,9 +167,9 @@ Clarity's reason to exist is the Anthropic blog [*Using Claude Code: Session Man
 | **Subagent decision** | — | ✗ no "tool output heavy → spin subagent" hint |
 | **Task-switch detection** | — | ✗ biggest blog ask, requires semantic diff of prompts |
 | Bad-compact prevention | Proactive red cue only | ⚠ no PreCompact hook to steer auto-compact |
-| `/handoff` brief generation | — | ✗ v0.0.6 |
+| `/handoff` brief generation | — | ✗ v0.0.7 |
 
-v0.0.5 is honest about the ~30% coverage. Doctor + statusline solve the *measurement* and *basic-awareness* half. The *per-turn decision support* half (rewind, subagent, task-switch) is the v0.0.6 and v0.0.7 work.
+v0.0.6 is honest about the ~30% coverage. Doctor + statusline solve the *measurement* and *basic-awareness* half. The *per-turn decision support* half (rewind, subagent, task-switch) is still future work.
 
 ## Roadmap
 
@@ -162,14 +177,11 @@ v0.0.5 is honest about the ~30% coverage. Doctor + statusline solve the *measure
 - v0.0.2 — Doctor + statusline + plugin manifest ✓
 - v0.0.3 — CLI + MCP server, latest spec alignment ✓
 - v0.0.4 — codex-audited hardening: symlink-safe CLI, robust jq parsing, cache TTL JSON parse, timezone-aware date filters, honest blog-coverage table
-- v0.0.5 — **(this release)** one-line installer (`install.sh`), checked-in smoke tests, fail-closed statusline behavior, unified release metadata across CLI/plugin/MCP, and real Claude Code install/update verification
-- v0.0.6 — `/rewind` + subagent guidance in statusline; PreCompact hook that asks "what's next?" before auto-compact fires
-- v0.0.7 — task-switch detection (keyword diff of recent prompts); `/handoff` skill generates brief to `.claude/handoffs/`
-- v0.0.8 — `clarity install` CLI: scaffolds project `.claude/` from Doctor findings (the 1Key PR in one command)
-
-## Case study
-
-Clarity's first user is [1Key](https://github.com/robotlearning123/1key), a TypeScript monorepo that was consuming 88% of the author's Claude Code budget before install. See [docs/case-study-1key.md](docs/case-study-1key.md) for the full walkthrough — Doctor output, PR diff, three rounds of codex fixes, and measured outcome.
+- v0.0.5 — one-line installer (`install.sh`), checked-in smoke tests, fail-closed statusline behavior, unified release metadata across CLI/plugin/MCP, and real Claude Code install/update verification
+- v0.0.6 — **(this release)** public-repo cleanup: self-contained docs, git-based install guidance, and release checks that verify the documented install path
+- v0.0.7 — `/rewind` + subagent guidance in statusline; PreCompact hook that asks "what's next?" before auto-compact fires
+- v0.0.8 — task-switch detection (keyword diff of recent prompts); `/handoff` skill generates brief to `.claude/handoffs/`
+- v0.0.9 — `clarity install` CLI: scaffolds project `.claude/` from Doctor findings in one command
 
 ## License
 

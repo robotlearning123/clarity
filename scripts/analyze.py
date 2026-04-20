@@ -263,11 +263,11 @@ def main() -> int:
         share = (top_p["cost"] / grand_cost * 100) if grand_cost else 0
         if share > 50:
             lines.append(
-                f"- **{share:.0f}% of spend is concentrated in `{normalize_project(top_name)}`.** Prioritize adding project-level `.claude/` rules and skills there first. See https://github.com/robotlearning123/clarity/blob/main/docs/case-study-1key.md for a worked example."
+                f"- **{share:.0f}% of spend is concentrated in `{normalize_project(top_name)}`.** Prioritize adding project-level `.claude/` rules, skills, and handoff notes there first so Claude stops re-exploring the same codebase every session."
             )
     if sessions and sessions[0]["cost_usd"] > 10:
         lines.append(
-            f"- **Your most expensive single session cost ~${sessions[0]['cost_usd']:,.2f}.** Review that first prompt — bounded prompts rarely balloon. See [token-saving rules template](https://github.com/robotlearning123/1key/pull/228)."
+            f"- **Your most expensive single session cost ~${sessions[0]['cost_usd']:,.2f}.** Review that first prompt — bounded prompts rarely balloon. Rewrite vague prompts into a concrete goal, a bounded scope, and a clear exit condition."
         )
     if grand_tokens["cache_creation_input_tokens"] > 0 and (
         grand_tokens["cache_read_input_tokens"]

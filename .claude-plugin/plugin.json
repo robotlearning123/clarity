@@ -1,6 +1,6 @@
 {
   "name": "clarity",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "Copilot-style Claude Code context and token management. Doctor scans your past token usage, recommends official-docs-based fixes, and keeps watch from the statusline. Ships across four surfaces: CLI, MCP server, Claude Code plugin, slash-command skill.",
   "author": {
     "name": "robotlearning123",

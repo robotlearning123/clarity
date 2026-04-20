@@ -6,7 +6,7 @@ Use this before creating any public tag.
 
 - Run `bash scripts/release-check.sh`
 - Confirm `CHANGELOG.md` has a section for the release version
-- Confirm the installer command in `README.md` points at the release tag
+- Confirm the installer snippet in `README.md` uses a git-based tagged checkout, not a raw-content URL
 
 ## 2. Host integration
 
@@ -56,10 +56,26 @@ The `release.yml` workflow will:
 
 ## 5. Post-release spot check
 
-Verify the tagged install command works:
+Verify the documented install flow works from a fresh shell:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/robotlearning123/clarity/vX.Y.Z/install.sh | CLARITY_REPO_REF=vX.Y.Z bash
+bash -lc '
+set -euo pipefail
+dir="$HOME/.claude/clarity"
+repo="https://github.com/robotlearning123/clarity.git"
+ref="vX.Y.Z"
+
+if [ -d "$dir/.git" ]; then
+  git -C "$dir" fetch --tags origin
+elif [ ! -e "$dir" ]; then
+  git -c advice.detachedHead=false clone --depth 1 --branch "$ref" "$repo" "$dir"
+else
+  echo "$dir exists but is not a git checkout" >&2
+  exit 1
+fi
+
+CLARITY_REPO_REF="$ref" "$dir/install.sh"
+'
 ```
 
 Then restart Claude Code and run:

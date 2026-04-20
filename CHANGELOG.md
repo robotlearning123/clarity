@@ -5,6 +5,17 @@ All notable changes to Clarity will be documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versioning: [Semantic Versioning](https://semver.org/).
 
+## [0.0.6] — 2026-04-20
+
+### Changed
+- **Installer docs now use the same git access path as the repository itself.** README and release docs no longer depend on `raw.githubusercontent.com`, which can fail for private repositories even when `git clone` works.
+- **Product docs are now self-contained.** Removed external project-specific references from README, release docs, and Doctor recommendations so Clarity explains itself without leaning on another repository.
+- **Public release path is now coherent again.** Repo visibility, README install snippet, plugin cache path, and release checks all line up on `v0.0.6`.
+
+### Verified
+- **Release checks now validate the documented install flow.** Repo tests cover both `install.sh` directly and the git-based installer snippet documented for users.
+- **Public installer path works end to end.** The published `v0.0.6` installer is intended to be fetched anonymously from GitHub and installed into a fresh Claude Code home.
+
 ## [0.0.5] — 2026-04-19
 
 ### Added
@@ -13,7 +24,7 @@ Versioning: [Semantic Versioning](https://semver.org/).
 
 ### Changed
 - **Release version unified to `0.0.5` across all public surfaces.** CLI, plugin manifest, marketplace manifest, MCP `serverInfo`, README install command, and expected plugin cache path now agree.
-- **README install flow is now single-path and release-pinned.** The primary install instructions point at the tagged `install.sh` entrypoint instead of a multi-step manual sequence.
+- **README install flow is single-path and release-pinned.** The primary install instructions stay tied to a specific release version.
 - **Roadmap shifted forward.** `/rewind`, subagent guidance, and task-switch detection remain future work; `0.0.5` is the packaging-and-distribution release, not the decision-support release.
 
 ### Verified
@@ -59,7 +70,7 @@ Full audit against docs.claude.com, modelcontextprotocol.io, and Anthropic Claud
 - Skill: frontmatter matches the 2026 reference (name, description, when_to_use, argument-hint, effort)
 
 ### Known limits
-- No `clarity install` CLI yet — project `.claude/` scaffolding is still manual (see docs/case-study-1key.md for the 1Key example).
+- No `clarity install` CLI yet — project `.claude/` scaffolding is still manual.
 - Statusline `date` invocation assumes macOS BSD `date -j -f` OR GNU `date -d`; fully portable rewrite deferred.
 - MCP server is stdio-only; HTTP/SSE transports are not implemented.
 
@@ -72,11 +83,11 @@ Full audit against docs.claude.com, modelcontextprotocol.io, and Anthropic Claud
 - `.claude-plugin/plugin.json` — makes the repo discoverable as a Claude Code plugin (v0.0.2).
 
 ### Verified
-- `analyze.py` run against real 30-day data: $2,528 estimated cost over 7 days, top project correctly surfaced at 90% concentration.
+- `analyze.py` run against real 30-day data: top project concentration and expensive-session ranking surfaced correctly.
 - Statusline logic hand-tested across 5 path forms (bare, `./`, absolute, nested, innocent).
 
 ### Known limits
-- No `clarity install` CLI yet — project `.claude/` scaffolding is still manual (see docs/case-study-1key.md for the 1Key example).
+- No `clarity install` CLI yet — project `.claude/` scaffolding is still manual.
 - Statusline script assumes macOS `date -j -f` OR GNU `date -d`; other platforms untested.
 - SessionStart hook that auto-runs Doctor on first session not yet included — coming v0.0.3.
 
@@ -87,9 +98,8 @@ Full audit against docs.claude.com, modelcontextprotocol.io, and Anthropic Claud
 - README.md — problem statement, approach, comparison with wozcode and kieranklaassen/token_analysis.py, roadmap through the next planned releases.
 - MIT LICENSE.
 - .gitignore.
-- docs/case-study-1key.md — live walkthrough of install → doctor → fix → daily-use using 1Key as the first user, with real session stats, PR link, and three rounds of codex review fixes.
 
 ### Notes
-- Validated against 1Key project as first user case during design phase. 1Key's historical session data (3.48B tokens over 30 days, single session peaking at 867M tokens, 88% project concentration) shaped the initial rule set and skill templates.
+- Validated against real Claude Code session data during design phase. Historical session concentration and prompt-cache behavior shaped the initial rule set and skill templates.
 - No executable code in this release — v0.0.1 is scaffold only. First working `clarity doctor` ships in v0.0.2.
-- Three rounds of codex review on the 1Key install surfaced real defects in the initial scaffold: hook used fake env var, l2-add skill made false file-count promises, `.env.*` deny globs overreached, `.dev.vars` was missed, and several paths didn't match the actual codebase. All fixed before merge. See case study for details.
+- Early codex review on the initial scaffold surfaced real defects before merge: hook used a fake env var, deny globs overreached, `.dev.vars` was missed, and several paths did not match the intended codebase layout. All fixed before the first working release.

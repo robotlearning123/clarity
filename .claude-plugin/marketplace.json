@@ -11,7 +11,7 @@
       "name": "clarity",
       "source": "./",
       "description": "Doctor scans past token usage with correct Opus 4.7 cost weighting (cache_read 0.1x). Statusline script shows traffic-light suggestion based on ctx% and cache TTL. Skill /clarity-doctor runs the analyzer on demand. Also ships an MCP server exposing clarity_doctor as a callable tool.",
-      "version": "0.0.5",
+      "version": "0.0.6",
       "category": "productivity",
       "keywords": ["token", "context", "statusline", "doctor", "session-management"]
     }

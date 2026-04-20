@@ -5,7 +5,7 @@
 
 set -euo pipefail
 
-VERSION="0.0.5"
+VERSION="0.0.6"
 # Source of truth: .claude-plugin/plugin.json
 
 # Resolve symlinks so 'clarity' works when installed via `ln -s bin/clarity /usr/local/bin/`.

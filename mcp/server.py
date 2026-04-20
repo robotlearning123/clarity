@@ -34,7 +34,7 @@ from pathlib import Path
 PROTO_VERSION = (
     "2025-11-25"  # Current stable per modelcontextprotocol.io/specification/versioning
 )
-SERVER_INFO = {"name": "clarity", "version": "0.0.5"}
+SERVER_INFO = {"name": "clarity", "version": "0.0.6"}
 ROOT = Path(__file__).resolve().parent.parent
 
 TOOLS = [
